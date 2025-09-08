@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, Box, Card, CardContent, Grid, Button, AppBar, Toolbar,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
@@ -13,7 +14,8 @@ function Dashboard() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
+  const [_user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check authentication
@@ -23,41 +25,40 @@ function Dashboard() {
     
     if (!token || !userId || role !== 'doctor') {
       // Redirect to login if not authenticated
-      window.location.href = '/';
+      navigate('/');
       return;
     }
     
     setUser({ id: userId, role, token });
     fetchCases(token);
-  }, []);
+  }, [navigate, fetchCases]);
 
-  const fetchCases = async (token) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/doctor/cases`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setCases(response.data);
-    } catch (error) {
-      console.error('Error fetching cases:', error);
-      if (error.response?.status === 401) {
-        // Token expired, redirect to login
-        handleLogout();
-      } else {
-        setError('Failed to load cases. Please try refreshing the page.');
+  const fetchCases = useCallback(async (token) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/doctor/cases`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    } finally {
-      setLoading(false);
+    });
+    setCases(response.data);
+  } catch (error) {
+    console.error('Error fetching cases:', error);
+    if (error.response?.status === 401) {
+      handleLogout();
+    } else {
+      setError('Failed to load cases. Please try refreshing the page.');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const handleLogout = () => {
     localStorage.removeItem('doctor_access_token');
     localStorage.removeItem('doctor_user_id');
     localStorage.removeItem('doctor_role');
     localStorage.removeItem('doctor_authenticated');
-    window.location.href = '/';
+    navigate('/');
   };
 
   const handleRefresh = () => {

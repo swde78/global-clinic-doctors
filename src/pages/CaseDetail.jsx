@@ -35,20 +35,20 @@ function CaseDetail() {
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/doctor/cases/${caseId}`, {
+      const _response = await axios.get(`${API_BASE_URL}/doctor/cases/${caseId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       
-      setCaseData(response.data);
+      setCaseData(_response.data);
     } catch (error) {
       console.error('Error fetching case details:', error);
       
-      if (error.response?.status === 401) {
+      if (error._response?.status === 401) {
         localStorage.removeItem('doctor_access_token');
         navigate('/');
-      } else if (error.response?.status === 404) {
+      } else if (error._response?.status === 404) {
         setError('Case not found or you do not have access to this case.');
       } else {
         setError('Failed to fetch case details. Please try again.');
@@ -70,7 +70,7 @@ function CaseDetail() {
     try {
       const token = localStorage.getItem('doctor_access_token');
       
-      const response = await axios.post(`${API_BASE_URL}/doctor/cases/${caseId}/report`, {
+      const _response = await axios.post(`${API_BASE_URL}/doctor/cases/${caseId}/report`, {
         report_text: reportText,
         diagnosis: diagnosis.trim() || null
       }, {
@@ -86,7 +86,7 @@ function CaseDetail() {
     } catch (error) {
       console.error('Error submitting report:', error);
       
-      if (error.response?.status === 401) {
+      if (error._response?.status === 401) {
         localStorage.removeItem('doctor_access_token');
         navigate('/');
       } else {
@@ -121,6 +121,7 @@ function CaseDetail() {
     if (caseId) {
       fetchCaseDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
   }, [caseId, navigate]);
 
   if (loading) {
