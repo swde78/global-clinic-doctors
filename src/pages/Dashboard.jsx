@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, Box, Card, CardContent, Grid, Button, AppBar, Toolbar,
@@ -51,6 +51,7 @@ function Dashboard() {
   } finally {
     setLoading(false);
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
   const handleLogout = () => {
