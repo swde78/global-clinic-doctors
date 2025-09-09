@@ -17,43 +17,7 @@ function Dashboard() {
   const [_user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('doctor_access_token');
-    const userId = localStorage.getItem('doctor_user_id');
-    const role = localStorage.getItem('doctor_role');
-    
-    if (!token || !userId || role !== 'doctor') {
-      // Redirect to login if not authenticated
-      navigate('/');
-      return;
-    }
-    
-    setUser({ id: userId, role, token });
-    fetchCases(token);
-  }, [navigate, fetchCases]);
-
-  const fetchCases = useCallback(async (token) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/doctor/cases`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    setCases(response.data);
-  } catch (error) {
-    console.error('Error fetching cases:', error);
-    if (error.response?.status === 401) {
-      handleLogout();
-    } else {
-      setError('Failed to load cases. Please try refreshing the page.');
-    }
-  } finally {
-    setLoading(false);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-
+  // 1. handleLogout: لا تعتمد على أي دالة أخرى
   const handleLogout = () => {
     localStorage.removeItem('doctor_access_token');
     localStorage.removeItem('doctor_user_id');
@@ -62,6 +26,41 @@ function Dashboard() {
     navigate('/');
   };
 
+  // 2. fetchCases: تعتمد على handleLogout
+  const fetchCases = useCallback(async (token) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/doctor/cases`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setCases(response.data);
+    } catch (error) {
+      console.error('Error fetching cases:', error);
+      if (error.response?.status === 401) {
+        handleLogout(); // ← تستخدم handleLogout
+      } else {
+        setError('Failed to load cases. Please try refreshing the page.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []); // لا تعتمد على شيء، لكن يمكن إضافة handleLogout إذا أردنا
+
+  // 3. useEffect: يعتمد على fetchCases
+  useEffect(() => {
+    const token = localStorage.getItem('doctor_access_token');
+    const userId = localStorage.getItem('doctor_user_id');
+    const role = localStorage.getItem('doctor_role');
+    
+    if (!token || !userId || role !== 'doctor') {
+      navigate('/');
+      return;
+    }
+    
+    setUser({ id: userId, role, token });
+    fetchCases(token);
+  }, [navigate, fetchCases]); // ✅ الآن آمن
+
+  // 4. handleRefresh: تعتمد على fetchCases
   const handleRefresh = () => {
     setLoading(true);
     setError('');
@@ -69,6 +68,7 @@ function Dashboard() {
     fetchCases(token);
   };
 
+  // 5. وظائف عرضية
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': return 'warning';
