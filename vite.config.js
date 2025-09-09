@@ -1,9 +1,8 @@
-// vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node/path';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
