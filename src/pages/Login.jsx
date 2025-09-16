@@ -5,7 +5,7 @@ import {
 import { Email as EmailIcon, Lock as LockIcon, LocalHospital as HospitalIcon } from '@mui/icons-material';
 // Using native fetch API instead of axios
 
-const API_BASE_URL = 'https://8000-i1csmgelwq595e3wt1acg-c7c750f2.manusvm.computer';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -36,14 +36,14 @@ function Login() {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/doctors/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          login_id: email,
-          password_or_otp: password,
+          email: email,
+          password: password,
         })
       });
       
@@ -55,11 +55,11 @@ function Login() {
       console.log('Doctor Login Response:', data);
       
       // Store authentication data
-      localStorage.setItem('doctor_access_token', data.access_token);
-      localStorage.setItem('doctor_user_id', data.user_id.toString());
-      localStorage.setItem('doctor_role', data.role);
-      localStorage.setItem('doctor_authenticated', 'true');
-      
+       localStorage.setItem('doctor_access_token', data.token);
+       localStorage.setItem('doctor_user_id', data.user.id.toString());
+       localStorage.setItem('doctor_role', data.user.role);
+       localStorage.setItem('doctor_authenticated', 'true'); 
+
       // Force page reload to dashboard
       window.location.href = '/dashboard';
       

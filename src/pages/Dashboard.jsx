@@ -8,7 +8,7 @@ import {
 import { LocalHospital as HospitalIcon, ExitToApp as LogoutIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://8000-i1csmgelwq595e3wt1acg-c7c750f2.manusvm.computer';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function Dashboard() {
   const [cases, setCases] = useState([]);
@@ -29,10 +29,10 @@ function Dashboard() {
   // 2. fetchCases: تعتمد على handleLogout
   const fetchCases = useCallback(async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/doctor/cases`, {
+      const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setCases(response.data);
+      setCases(response.data.cases || []);
     } catch (error) {
       console.error('Error fetching cases:', error);
       if (error.response?.status === 401) {
@@ -239,8 +239,8 @@ function Dashboard() {
                           <Button 
                             variant="contained" 
                             size="small"
-                            onClick={() => window.location.href = `/case/${caseItem.id}`}
-                          >
+                            onClick={() => navigate(`/case/${caseItem.id}`)}
+			    >
                             View Case
                           </Button>
                         </TableCell>
