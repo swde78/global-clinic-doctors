@@ -39,18 +39,10 @@ function CaseDetail() {
     return;
   }
   console.log("Request URL:", `${API_BASE_URL}/api/patients/cases`);
-   const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
-  headers: { Authorization: `Bearer ${localStorage.getItem('doctor_access_token')}` }
-})
-.then(response => {
-  console.log("Response data:", response.data);
-  console.log("Is it an array?", Array.isArray(response.data));
-  console.log("Has 'cases' field?", Array.isArray(response.data.cases));
-});
 
- // const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
-  //  headers: { Authorization: `Bearer ${token}` },
- // });
+  const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   const allCases = response.data.cases || [];
   const foundCase = allCases.find(c => c.id === parseInt(caseId));
