@@ -24,6 +24,7 @@ function CaseDetail() {
   const navigate = useNavigate();
   const { caseId } = useParams();
 
+ console.log("caseId as string:", caseId, "parsed:", parseInt(caseId));	
   const fetchCaseDetails = async () => {
     console.log("Fetching case with ID:", caseId); 
     setLoading(true);
@@ -38,9 +39,18 @@ function CaseDetail() {
     return;
   }
   console.log("Request URL:", `${API_BASE_URL}/api/patients/cases`);
-  const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+   const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
+  headers: { Authorization: `Bearer ${localStorage.getItem('doctor_access_token')}` }
+})
+.then(response => {
+  console.log("Response data:", response.data);
+  console.log("Is it an array?", Array.isArray(response.data));
+  console.log("Has 'cases' field?", Array.isArray(response.data.cases));
+});
+
+ // const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
+  //  headers: { Authorization: `Bearer ${token}` },
+ // });
 
   const allCases = response.data.cases || [];
   const foundCase = allCases.find(c => c.id === parseInt(caseId));
@@ -82,6 +92,7 @@ function CaseDetail() {
 
   try {
     const token = localStorage.getItem('doctor_access_token');
+     console.log("Token available:", !!token);
     if (!token) {
       navigate('/');
       return;
