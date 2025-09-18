@@ -1,8 +1,9 @@
+// CaseDetail.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Typography, Container, Box, Button, Paper, Alert, CircularProgress,
   AppBar, Toolbar, IconButton, Grid, Divider, TextField, Card, CardContent,
-  List, ListItem, ListItemIcon, ListItemText, Chip
+  Chip
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon, Send as SendIcon, AudioFile as AudioIcon,
@@ -10,7 +11,7 @@ import {
   MedicalServices as MedicalIcon, Assignment as ReportIcon
 } from '@mui/icons-material';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -22,116 +23,121 @@ function CaseDetail() {
   const [reportText, setReportText] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
   const navigate = useNavigate();
-  const { caseId } = useParams();
 
- console.log("caseId as string:", caseId, "parsed:", parseInt(caseId));	
-  
+  // ✅ استخدم window.location.pathname بدلاً من useParams()
+  const caseId = window.location.pathname.split('/').pop();
+
+  console.log("Extracted caseId from URL:", caseId);
+
+  // تحقق من أن caseId رقم صحيح
+  const isValidId = !isNaN(caseId) && caseId.trim() !== '';
+
   const fetchCaseDetails = async () => {
-  console.log("Fetching case with ID:", caseId); 
-  setLoading(true);
-  setError('');
-
-  try {
-    const token = localStorage.getItem('doctor_access_token');
-    console.log("Token available:", !!token);
-
-    if (!token) {
-      navigate('/');
+    if (!isValidId) {
+      setError(`Invalid case ID: "${caseId}"`);
+      setLoading(false);
       return;
     }
 
-    // ✅ الإصلاح: استخدم فقط async/await بدون then()
-    const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    setLoading(true);
+    setError('');
 
-    // ✅ أضف تسجيل للرد
-    console.log("Full API Response:", response.data);
+    try {
+      const token = localStorage.getItem('doctor_access_token');
+      console.log("Token available:", !!token);
 
-    const allCases = response.data.cases || [];
-    
-    // ✅ تحقق من أن allCases مصفوفة
-    if (!Array.isArray(allCases)) {
-      console.error("Expected 'cases' to be an array, got:", allCases);
-      setError("Invalid data format from server.");
+      if (!token) {
+        navigate('/');
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log("Full API Response:", response.data);
+
+      const allCases = response.data.cases || [];
+
+      if (!Array.isArray(allCases)) {
+        setError("Invalid data format from server.");
+        setCaseData(null);
+        return;
+      }
+
+      const foundCase = allCases.find(c => c.id === parseInt(caseId));
+
+      if (!foundCase) {
+        setError(`Case #${caseId} not found or you do not have access.`);
+        setCaseData(null);
+        return;
+      }
+
+      setCaseData(foundCase);
+    } catch (err) {
+      console.error('Error fetching case details:', err);
+      
+      if (err.response?.status === 401) {
+        localStorage.removeItem('doctor_access_token');
+        navigate('/');
+      } else if (err.response?.status === 403) {
+        setError('Access denied. You are not authorized to view this case.');
+      } else if (err.response?.status === 404) {
+        setError('Case not found on the server.');
+      } else {
+        setError('Failed to load case details. Please check your connection.');
+      }
       setCaseData(null);
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    const foundCase = allCases.find(c => c.id === parseInt(caseId));
-
-    if (!foundCase) {
-      setError(`Case #${caseId} not found or you do not have access.`);
-      setCaseData(null);
-      return;
-    }
-
-    setCaseData(foundCase);
-  } catch (err) {
-    console.error('Error fetching case details:', err);
-    
-    if (err.response?.status === 401) {
-      localStorage.removeItem('doctor_access_token');
-      navigate('/');
-    } else if (err.response?.status === 403) {
-      setError('Access denied. You are not authorized to view this case.');
-    } else if (err.response?.status === 404) {
-      setError('Case not found on the server.');
-    } else {
-      setError('Failed to load case details. Please check your connection.');
-    }
-    setCaseData(null);
-  } finally {
-    setLoading(false);
-  }
-};
- 
+  };
 
   const handleSubmitReport = async () => {
-  if (!reportText.trim()) {
-    setError('Please provide a medical report before submitting.');
-    return;
-  }
-
-  setSubmitting(true);
-  setError('');
-
-  try {
-    const token = localStorage.getItem('doctor_access_token');
-     console.log("Token available:", !!token);
-    if (!token) {
-      navigate('/');
+    if (!reportText.trim()) {
+      setError('Please provide a medical report before submitting.');
       return;
     }
 
-    await axios.post(`${API_BASE_URL}/api/doctors/case/${caseId}/report`, {
-      report_text: reportText,
-      diagnosis: diagnosis.trim() || null
-    }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-    });
+    setSubmitting(true);
+    setError('');
 
-    alert('Medical report submitted successfully!');
-    navigate('/dashboard');
+    try {
+      const token = localStorage.getItem('doctor_access_token');
+      if (!token) {
+        navigate('/');
+        return;
+      }
 
-  } catch (error) {
-    console.error('Error submitting report:', error);
+      await axios.post(`${API_BASE_URL}/api/doctors/case/${caseId}/report`, {
+        report_text: reportText,
+        diagnosis: diagnosis.trim() || null
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
 
-    if (error.response?.status === 401) {
-      localStorage.removeItem('doctor_access_token');
-      navigate('/');
-    } else if (error.response?.status === 404) {
-      setError('Case not found. It may have been deleted or moved.');
-    } else {
-      setError('Failed to submit report. Please try again.');
+      alert('Medical report submitted successfully!');
+      navigate('/dashboard');
+
+    } catch (error) {
+      console.error('Error submitting report:', error);
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem('doctor_access_token');
+        navigate('/');
+      } else if (error.response?.status === 404) {
+        setError('Case not found. It may have been deleted or moved.');
+      } else {
+        setError('Failed to submit report. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
     }
-  } finally {
-    setSubmitting(false);
-  }
-};
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'pending': return 'warning';
@@ -141,12 +147,10 @@ function CaseDetail() {
     }
   };
 
+  // ✅ اطلب البيانات عند التحميل فقط
   useEffect(() => {
-    if (caseId) {
-      console.log("caseId as string:", caseId, "parsed:", parseInt(caseId));
-      fetchCaseDetails();
-    }
-  }, [caseId]);
+    fetchCaseDetails();
+  }, []);
 
   if (loading) {
     return (
