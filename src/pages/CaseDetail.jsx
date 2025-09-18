@@ -25,53 +25,67 @@ function CaseDetail() {
   const { caseId } = useParams();
 
  console.log("caseId as string:", caseId, "parsed:", parseInt(caseId));	
-  const fetchCaseDetails = async () => {
-    console.log("Fetching case with ID:", caseId); 
-    setLoading(true);
-    setError('');
-
-   try {
-  const token = localStorage.getItem('doctor_access_token');
-    console.log("Token available:", !!token);
-  if (!token) {
-    console.log("Token preview:", token.substring(0, 20) + "...");
-    navigate('/');
-    return;
-  }
-  console.log("Request URL:", `${API_BASE_URL}/api/patients/cases`);
-
-  const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  const allCases = response.data.cases || [];
-  const foundCase = allCases.find(c => c.id === parseInt(caseId));
-
-  if (!foundCase) {
-    setError(`Case #${caseId} not found or you do not have access.`);
-    setCaseData(null);
-    return;
-  }
-
-  setCaseData(foundCase);
-} catch (err) {
-  console.error('Error fetching case details:', err);
   
-  if (err.response?.status === 401) {
-    localStorage.removeItem('doctor_access_token');
-    navigate('/');
-  } else if (err.response?.status === 403) {
-    setError('Access denied. You are not authorized to view this case.');
-  } else if (err.response?.status === 404) {
-    setError('Case not found on the server.');
-  } else {
-    setError('Failed to load case details. Please check your connection.');
-  }
-  setCaseData(null);
-   } finally {
-  setLoading(false); // ✅ ضمان إنهاء التحميل
+  const fetchCaseDetails = async () => {
+  console.log("Fetching case with ID:", caseId); 
+  setLoading(true);
+  setError('');
+
+  try {
+    const token = localStorage.getItem('doctor_access_token');
+    console.log("Token available:", !!token);
+
+    if (!token) {
+      navigate('/');
+      return;
+    }
+
+    // ✅ الإصلاح: استخدم فقط async/await بدون then()
+    const response = await axios.get(`${API_BASE_URL}/api/patients/cases`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // ✅ أضف تسجيل للرد
+    console.log("Full API Response:", response.data);
+
+    const allCases = response.data.cases || [];
+    
+    // ✅ تحقق من أن allCases مصفوفة
+    if (!Array.isArray(allCases)) {
+      console.error("Expected 'cases' to be an array, got:", allCases);
+      setError("Invalid data format from server.");
+      setCaseData(null);
+      return;
+    }
+
+    const foundCase = allCases.find(c => c.id === parseInt(caseId));
+
+    if (!foundCase) {
+      setError(`Case #${caseId} not found or you do not have access.`);
+      setCaseData(null);
+      return;
+    }
+
+    setCaseData(foundCase);
+  } catch (err) {
+    console.error('Error fetching case details:', err);
+    
+    if (err.response?.status === 401) {
+      localStorage.removeItem('doctor_access_token');
+      navigate('/');
+    } else if (err.response?.status === 403) {
+      setError('Access denied. You are not authorized to view this case.');
+    } else if (err.response?.status === 404) {
+      setError('Case not found on the server.');
+    } else {
+      setError('Failed to load case details. Please check your connection.');
+    }
+    setCaseData(null);
+  } finally {
+    setLoading(false);
   }
 };
+ 
 
   const handleSubmitReport = async () => {
   if (!reportText.trim()) {
